@@ -1,0 +1,19 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+nb_black = "*"
+jupyterlab = "*"
+notebook = "*"
+jupyter-nbextensions-configurator = "*"
+
+[packages]
+pandas = "*"
+numpy = "*"
+matplotlib = "*"
+scipy = "*"
+
+[requires]
+python_version = "3.6"
