@@ -1,1 +1,2 @@
-# SMA_backtesting
+# Toucan 
+A python package for backtesting trading strategies
