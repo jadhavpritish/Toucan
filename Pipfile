@@ -5,15 +5,25 @@ verify_ssl = true
 
 [dev-packages]
 nb_black = "*"
+isort = "*"
 jupyterlab = "*"
 notebook = "*"
 jupyter-nbextensions-configurator = "*"
+matplotlib = "*"
+pipfile = "*"
 
 [packages]
 pandas = "*"
 numpy = "*"
-matplotlib = "*"
 scipy = "*"
+mplfinance = "*"
+alpha_vantage = "*"
+flask = "*"
+Django = "==2.1.*"
+djangorestframework = "==3.9.*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
