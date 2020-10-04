@@ -11,6 +11,7 @@ notebook = "*"
 jupyter-nbextensions-configurator = "*"
 matplotlib = "*"
 pipfile = "*"
+pytest = "*"
 
 [packages]
 pandas = "*"

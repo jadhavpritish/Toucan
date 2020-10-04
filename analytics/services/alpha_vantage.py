@@ -5,6 +5,7 @@ import requests
 
 API_TIMEOUT = 30
 
+
 class TimeInterval(Enum):
 
     ONE_MIN: str = "1min"
