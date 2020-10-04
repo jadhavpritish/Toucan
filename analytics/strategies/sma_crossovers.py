@@ -15,8 +15,17 @@ class Trend(Enum):
 
 @dataclass
 class SMAStrategy:
-
     scrip_df: pd.DataFrame
+    slow_ma: int
+    fast_ma: int
+
+    def __post_init__(self):
+
+        # sanity check to ensure that slow_ma is greater than faster_ma
+        assert (
+            self.slow_ma > self.fast_ma
+        ), f"slow ma should be greater than fast ma- received - slow_ma - {self.slow_ma}, fast_ma-{self.fast_ma}"
+        self.column_suffix = f"{self.slow_ma}_{self.fast_ma}"
 
     def compute_sma(
         self, column: str = "close", look_back_periods: List[int] = [5, 10, 20, 40]
@@ -25,47 +34,51 @@ class SMAStrategy:
         sma_dict = {}
         for n in look_back_periods:
             sma_values = self.scrip_df[column].rolling(window=n).mean()
-            sma_values.fillna(self.scrip_df[column], inplace=True)
+            sma_values.fillna(self.scrip_df[column].astype(float), inplace=True)
             sma_dict[f"sma_{n}"] = sma_values
 
         return pd.DataFrame(sma_dict, index=self.scrip_df.index)
 
-    def sma_sessions(self, slow_ma=20, fast_ma=10):
+    def sma_sessions(self):
 
-        assert set([f"sma_{col}" for col in [slow_ma, fast_ma]]).issubset(
-            self.scrip_df.columns
+        look_back_periods: List[int] = [self.slow_ma, self.fast_ma]
+
+        sma_df = pd.concat(
+            [self.scrip_df, self.compute_sma(look_back_periods=look_back_periods)],
+            axis=1,
         )
 
-        column_suffix = f"{slow_ma}_{fast_ma}"
+        expected_columns = set([f"sma_{col}" for col in [self.slow_ma, self.fast_ma]])
+        assert expected_columns.issubset(
+            sma_df.columns
+        ), f"Expecting columns {expected_columns} for computing sma cross over sessions. Received {sma_df}"
 
         # identify start of a session by annotating the time when faster moving average crosses over the
         # slower moving average.
-        sma_signal = self.scrip_df[f"sma_{fast_ma}"] > self.scrip_df[f"sma_{slow_ma}"]
+        sma_df[f"sma_signal_{self.column_suffix}"] = (
+            sma_df[f"sma_{self.fast_ma}"] > sma_df[f"sma_{self.slow_ma}"]
+        )
 
         # Next we need to create sesssions. A sessions last as long as the faster moving average does not cross
         # above or below the slower moving average.
         # We use EX-OR truth table to identify change overs.
-        sma_session = (
-            (sma_signal ^ sma_signal.shift(1)).fillna(False).cumsum(skipna=False)
-        )
-
-        # create a dataframe
-        sma_df = pd.DataFrame(
-            {
-                f"sma_signal_{column_suffix}": sma_signal,
-                f"sma_session_{column_suffix}": sma_session,
-            }
+        sma_df[f"sma_session_{self.column_suffix}"] = (
+            (
+                sma_df[f"sma_signal_{self.column_suffix}"]
+                ^ sma_df[f"sma_signal_{self.column_suffix}"].shift(1)
+            )
+            .fillna(False)
+            .cumsum(skipna=False)
         )
 
         # annotate session as either bullish or bearish
-        sma_df[f"label_{column_suffix}"] = np.where(
-            sma_signal == 1, "bullish", "bearish"
+        sma_df[f"label_{self.column_suffix}"] = np.where(
+            sma_df[f"sma_signal_{self.column_suffix}"] == 1, "bullish", "bearish"
         )
         return sma_df
 
     @staticmethod
     def compute_returns(session_df: pd.DataFrame, slow_ma: int = 20, fast_ma: int = 10):
-
         label_column = f"label_{slow_ma}_{fast_ma}"
         assert label_column in session_df.columns, session_df.columns
 
@@ -86,8 +99,10 @@ class SMAStrategy:
             {"percent_returns": perc_returns, "session_details": f"{start_ts}-{end_ts}"}
         )
 
+    @classmethod
     def evaluate_sma_crossover(
-        self,
+        cls,
+        raw_scrip_df: pd.DataFrame,
         slow_ma: int = 20,
         fast_ma: int = 10,
         capture_trend: Trend = Trend.ALL,
@@ -98,22 +113,15 @@ class SMAStrategy:
         3. Aggregates data by session and trend to compute estimated resturns per session.
         """
 
-        look_back_periods: List[int] = [slow_ma, fast_ma]
-
-        # compute smas for the given look-back periods
-        sma_df = self.compute_sma(look_back_periods=look_back_periods)
-        scrip_sma_df = pd.concat([self.scrip_df, sma_df], axis=1)
+        sma_obj = cls(scrip_df=raw_scrip_df, slow_ma=slow_ma, fast_ma=fast_ma)
 
         # Annotate sessions. A session start when faster MA cross above or below the slower MA.
-        scrip_sma_sessions = self.sma_sessions(slow_ma=slow_ma, fast_ma=fast_ma)
-        merged_scrip_sma_sessions = pd.merge(
-            scrip_sma_df, scrip_sma_sessions, left_index=True, right_index=True
-        )
+        scrip_sma_sessions = sma_obj.sma_sessions()
 
         column_suffix = f"{slow_ma}_{fast_ma}"
         # aggregate session to compute estimated returns per session.
-        aggregated_returns = merged_scrip_sma_sessions.groupby(
-            [f"sma_session_{column_suffix}", f"label_{column_suffix}"]
+        aggregated_returns = scrip_sma_sessions.groupby(
+            [f"sma_session_{column_suffix}", f"label_{column_suffix}"], as_index=True
         ).apply(SMAStrategy.compute_returns, slow_ma=slow_ma, fast_ma=fast_ma)
 
         # Filter results for ease of decision making.

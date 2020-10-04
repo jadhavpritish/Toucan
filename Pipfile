@@ -12,6 +12,7 @@ jupyter-nbextensions-configurator = "*"
 matplotlib = "*"
 pipfile = "*"
 pytest = "*"
+pytest-tornasync ="*"
 
 [packages]
 pandas = "*"

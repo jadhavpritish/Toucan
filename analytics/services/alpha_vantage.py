@@ -65,6 +65,9 @@ class AVTimeseries:
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
         result_df.columns = self._expected_columns
+        result_df[self._expected_columns] = result_df[self._expected_columns].astype(
+            float
+        )
 
         return result_df.sort_index()
 
@@ -87,5 +90,9 @@ class AVTimeseries:
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
         result_df.columns = self._expected_columns
+
+        result_df[self._expected_columns] = result_df[self._expected_columns].astype(
+            float
+        )
 
         return result_df.sort_index()
