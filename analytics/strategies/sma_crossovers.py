@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 
-class CaptureTrend(Enum):
+class Trend(Enum):
 
     BEARISH: str = "bearish"
     BULLISH: str = "bullish"
@@ -44,7 +44,7 @@ class SMAStrategy:
 
         # Next we need to create sesssions. A sessions last as long as the faster moving average does not cross
         # above or below the slower moving average.
-        # We use EXOR truth table to identify change overs.
+        # We use EX-OR truth table to identify change overs.
         sma_session = (
             (sma_signal ^ sma_signal.shift(1)).fillna(False).cumsum(skipna=False)
         )
@@ -90,26 +90,34 @@ class SMAStrategy:
         self,
         slow_ma: int = 20,
         fast_ma: int = 10,
-        capture_trend: CaptureTrend = CaptureTrend.ALL,
+        capture_trend: Trend = Trend.ALL,
     ):
+        """
+        1. computes Simple Moving Averages
+        2. Computes historical crossovers using SMA strategy and annotates sessions
+        3. Aggregates data by session and trend to compute estimated resturns per session.
+        """
 
         look_back_periods: List[int] = [slow_ma, fast_ma]
 
+        # compute smas for the given look-back periods
         sma_df = self.compute_sma(look_back_periods=look_back_periods)
-
         scrip_sma_df = pd.concat([self.scrip_df, sma_df], axis=1)
 
+        # Annotate sessions. A session start when faster MA cross above or below the slower MA.
         scrip_sma_sessions = self.sma_sessions(slow_ma=slow_ma, fast_ma=fast_ma)
         merged_scrip_sma_sessions = pd.merge(
             scrip_sma_df, scrip_sma_sessions, left_index=True, right_index=True
         )
 
         column_suffix = f"{slow_ma}_{fast_ma}"
+        # aggregate session to compute estimated returns per session.
         aggregated_returns = merged_scrip_sma_sessions.groupby(
             [f"sma_session_{column_suffix}", f"label_{column_suffix}"]
         ).apply(SMAStrategy.compute_returns, slow_ma=slow_ma, fast_ma=fast_ma)
 
-        if capture_trend in [CaptureTrend.BULLISH, CaptureTrend.BEARISH]:
+        # Filter results for ease of decision making.
+        if capture_trend in [Trend.BULLISH, Trend.BEARISH]:
             aggregated_returns = aggregated_returns.loc[
                 aggregated_returns.index.get_level_values(f"label_{column_suffix}")
                 == capture_trend.value

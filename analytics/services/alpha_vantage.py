@@ -3,9 +3,7 @@ from enum import Enum
 import pandas as pd
 import requests
 
-FREE_AV_API_KEY = "50VORHAYXU7L3Q33"
 API_TIMEOUT = 30
-
 
 class TimeInterval(Enum):
 
@@ -31,7 +29,7 @@ class AVFunctions(Enum):
 
 
 class AVTimeseries:
-    def __init__(self, api_key: str = FREE_AV_API_KEY):
+    def __init__(self, api_key: str):
 
         self.API_BASE_URL = "https://www.alphavantage.co/query"
 
