@@ -13,6 +13,7 @@ matplotlib = "*"
 pipfile = "*"
 pytest = "*"
 pytest-tornasync ="*"
+mypy = "*"
 
 [packages]
 pandas = "*"
