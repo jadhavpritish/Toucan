@@ -11,7 +11,6 @@ from analytics.studies.moving_averages import MovingAverages
 
 @dataclass
 class SMAStrategy(MovingAverages):
-    ticker_df: pd.DataFrame
     slow_ma: int
     fast_ma: int
 

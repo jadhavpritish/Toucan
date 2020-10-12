@@ -68,9 +68,9 @@ class MACDCrossOverStrategy(MACD):
         capture_trend: Trend = Trend.ALL,
     ):
         """
-        1. computes Simple Moving Averages
-        2. Computes historical crossovers using SMA strategy and annotates sessions
-        3. Aggregates data by session and trend to compute estimated resturns per session.
+
+        1. Computes historical crossovers using MACD crossover strategy and annotates sessions
+        2. Aggregates data by session and trend to compute estimated resturns per session.
         """
 
         macd_obj = cls(ticker_df=ticker_df)
