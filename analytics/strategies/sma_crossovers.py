@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
-import numpy as np #type: ignore
-import pandas as pd #type: ignore
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 
 class Trend(Enum):

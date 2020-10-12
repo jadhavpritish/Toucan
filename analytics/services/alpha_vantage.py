@@ -1,50 +1,26 @@
-from enum import Enum
+from typing import Any, Dict
 
-import pandas as pd #type: ignore
+import pandas as pd  # type: ignore
 import requests
-from typing_extensions import TypedDict
-from typing import Optional
+from requests.exceptions import HTTPError
+
+from analytics.services.alpha_vantage_utils import *
 
 API_TIMEOUT = 30
-
-
-class TimeInterval(Enum):
-
-    ONE_MIN: str = "1min"
-    FIVE_MIN: str = "5min"
-    FIFTEEN_MIN: str = "15min"
-    THIRTY_MIN: str = "30min"
-    SIXTY_MIN: str = "60min"
-
-
-class OutputSize(Enum):
-
-    COMPACT: str = "compact"
-    FULL: str = "full"
-
-
-class QueryParams(TypedDict, total=False):
-    apikey: str
-    symbol: str
-    interval: Optional[str]
-    function: str
-    outputsize: str
-
-
-class AVFunctions(Enum):
-    INTRADAY: str = "TIME_SERIES_INTRADAY"
-    INTRADAY_EXTENDED: str = "TIME_SERIES_INTRADAY_EXTENDED"
-    DAILY: str = "TIME_SERIES_DAILY"
-    DAILY_ADJUSTED: str = "TIME_SERIES_DAILY_ADJUSTED"
-    WEEKLY: str = "TIME_SERIES_WEEKLY"
+API_BASE_URL = "https://www.alphavantage.co/query"
 
 
 class AVTimeseries:
     def __init__(self, api_key: str):
 
-        self.API_BASE_URL = "https://www.alphavantage.co/query"
         self.api_key = api_key
-        self._expected_columns = ["open", "high", "low", "close", "volume"]
+
+    @staticmethod
+    def is_response_valid(response_json: Dict[str, Any]):
+        is_valid = True
+        if response_json.get("Error Message"):
+            return False
+        return is_valid
 
     def get_intraday_data(
         self,
@@ -62,44 +38,76 @@ class AVTimeseries:
         )
 
         response = requests.get(
-            self.API_BASE_URL,
-            params=query_params, #type: ignore
+            API_BASE_URL,
+            params=query_params,  # type: ignore
             timeout=API_TIMEOUT,
         )
 
         response.raise_for_status()
 
-        result = response.json()[f"Time Series ({interval.value})"]
+        response_json = response.json()
+        if not AVTimeseries.is_response_valid(response_json):
+            raise HTTPError(f"Invalid Request with params - {query_params}")
+
+        result = response_json[f"Time Series ({interval.value})"]
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
-        result_df.columns = self._expected_columns
-        result_df[self._expected_columns] = result_df[self._expected_columns].astype(
-            float
-        )
+        result_df.columns = list(map(clean_column_names, result_df.columns))
+
+        result_df = result_df.astype(float)
 
         return result_df.sort_index()
 
-    def get_daily_data(self, symbol: str, outputsize: OutputSize = OutputSize.COMPACT):
+    def get_daily_data(
+        self, symbol: str, outputsize: OutputSize = OutputSize.COMPACT
+    ) -> pd.DataFrame:
 
-        query_params = QueryParams(apikey=self.api_key,
-                                   symbol=symbol,
-                                   function=AVFunctions.DAILY.value,
-                                   outputsize=outputsize.value)
+        query_params = QueryParams(
+            apikey=self.api_key,
+            function=AVFunctions.DAILY.value,
+            symbol=symbol,
+            outputsize=outputsize.value,
+        )
         response = requests.get(
-            self.API_BASE_URL,
-            params=query_params, #type: ignore
+            API_BASE_URL,
+            params=query_params,  # type: ignore
             timeout=API_TIMEOUT,
         )
 
         response.raise_for_status()
 
-        result = response.json()[f"Time Series (Daily)"]
+        response_json = response.json()
+        if not AVTimeseries.is_response_valid(response_json):
+            raise HTTPError(f"Invalid Request with params - {query_params}")
+
+        result = response_json[f"Time Series (Daily)"]
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
-        result_df.columns = self._expected_columns
+        result_df.columns = list(map(clean_column_names, result_df.columns))
 
-        result_df[self._expected_columns] = result_df[self._expected_columns].astype(
-            float
-        )
+        result_df = result_df.astype(float)
 
         return result_df.sort_index()
+
+    def get_symbol_search_results(self, search_keyword: str) -> pd.DataFrame:
+
+        query_params = QueryParams(
+            apikey=self.api_key,
+            function=AVFunctions.SYMBOl_SEARCH.value,
+            keywords=search_keyword,
+        )
+
+        response = requests.get(API_BASE_URL, params=query_params, timeout=API_TIMEOUT)
+
+        response.raise_for_status()
+
+        response_json = response.json()
+        if not AVTimeseries.is_response_valid(response_json):
+            raise HTTPError(f"Invalid Request with params - {query_params}")
+
+        result = response_json.get("bestMatches")
+
+        result_df = pd.DataFrame(result)
+        result_df.columns = list(map(clean_column_names, result_df.columns))
+
+        return result_df
