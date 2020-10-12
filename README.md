@@ -4,7 +4,7 @@ A python package for backtesting trading strategies
 
 ## Steps to make it work - 
 
-1.Install pipenv - https://pypi.org/project/pipenv/
+1. Install pipenv - https://pypi.org/project/pipenv/
   `pip install pipenv`
   
 2. setup virtual environment locally 
