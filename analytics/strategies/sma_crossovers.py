@@ -5,6 +5,8 @@ from typing import List
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
+from analytics.studies.moving_averages import SMA
+
 
 class Trend(Enum):
 
@@ -14,8 +16,8 @@ class Trend(Enum):
 
 
 @dataclass
-class SMAStrategy:
-    scrip_df: pd.DataFrame
+class SMAStrategy(SMA):
+    ticker_df: pd.DataFrame
     slow_ma: int
     fast_ma: int
 
@@ -27,24 +29,12 @@ class SMAStrategy:
         ), f"slow ma should be greater than fast ma- received - slow_ma - {self.slow_ma}, fast_ma-{self.fast_ma}"
         self.column_suffix = f"{self.slow_ma}_{self.fast_ma}"
 
-    def compute_sma(
-        self, column: str = "close", look_back_periods: List[int] = [5, 10, 20, 40]
-    ):
-
-        sma_dict = {}
-        for n in look_back_periods:
-            sma_values = self.scrip_df[column].rolling(window=n).mean()
-            sma_values.fillna(self.scrip_df[column].astype(float), inplace=True)
-            sma_dict[f"sma_{n}"] = sma_values
-
-        return pd.DataFrame(sma_dict, index=self.scrip_df.index)
-
     def sma_sessions(self):
 
         look_back_periods: List[int] = [self.slow_ma, self.fast_ma]
 
         sma_df = pd.concat(
-            [self.scrip_df, self.compute_sma(look_back_periods=look_back_periods)],
+            [self.ticker_df, self.compute_sma(look_back_periods=look_back_periods)],
             axis=1,
         )
 
@@ -102,7 +92,7 @@ class SMAStrategy:
     @classmethod
     def evaluate_sma_crossover(
         cls,
-        raw_scrip_df: pd.DataFrame,
+        ticker_df: pd.DataFrame,
         slow_ma: int = 20,
         fast_ma: int = 10,
         capture_trend: Trend = Trend.ALL,
@@ -113,7 +103,7 @@ class SMAStrategy:
         3. Aggregates data by session and trend to compute estimated resturns per session.
         """
 
-        sma_obj = cls(scrip_df=raw_scrip_df, slow_ma=slow_ma, fast_ma=fast_ma)
+        sma_obj = cls(ticker_df=ticker_df, slow_ma=slow_ma, fast_ma=fast_ma)
 
         # Annotate sessions. A session start when faster MA cross above or below the slower MA.
         scrip_sma_sessions = sma_obj.sma_sessions()
