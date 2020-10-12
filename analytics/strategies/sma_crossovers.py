@@ -5,18 +5,12 @@ from typing import List
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
-from analytics.studies.moving_averages import SMA
-
-
-class Trend(Enum):
-
-    BEARISH: str = "bearish"
-    BULLISH: str = "bullish"
-    ALL: str = "all"
+from analytics.strategies.utils import Trend
+from analytics.studies.moving_averages import MovingAverages
 
 
 @dataclass
-class SMAStrategy(SMA):
+class SMAStrategy(MovingAverages):
     ticker_df: pd.DataFrame
     slow_ma: int
     fast_ma: int
