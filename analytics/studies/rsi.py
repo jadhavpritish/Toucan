@@ -3,6 +3,8 @@ from enum import Enum
 
 import pandas as pd
 
+from analytics.studies.data_definition import TickerData
+
 
 class RSIMethod(Enum):
     SMA: str = "sma"
@@ -10,9 +12,7 @@ class RSIMethod(Enum):
 
 
 @dataclass
-class RSI:
-    ticker_df: pd.DataFrame
-
+class RSI(TickerData):
     def compute_rsi(
         self, span: int = 14, method: RSIMethod = RSIMethod.SMA
     ) -> pd.Series:

@@ -3,12 +3,11 @@ from typing import List
 
 import pandas as pd
 
+from analytics.studies.data_definition import TickerData
+
 
 @dataclass
-class MovingAverages:
-
-    ticker_df: pd.DataFrame
-
+class MovingAverages(TickerData):
     def compute_sma(
         self, column: str = "close", look_back_periods: List[int] = [5, 10, 20, 40]
     ):
