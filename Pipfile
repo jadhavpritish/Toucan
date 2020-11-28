@@ -14,6 +14,8 @@ pipfile = "*"
 pytest = "*"
 pytest-tornasync ="*"
 mypy = "*"
+seaborn = "*"
+bokeh = "*"
 
 [packages]
 pandas = "*"
