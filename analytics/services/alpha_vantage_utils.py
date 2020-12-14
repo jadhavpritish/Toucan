@@ -36,6 +36,11 @@ class AVFunctions(Enum):
     DAILY_ADJUSTED: str = "TIME_SERIES_DAILY_ADJUSTED"
     WEEKLY: str = "TIME_SERIES_WEEKLY"
     SYMBOl_SEARCH: str = "SYMBOL_SEARCH"
+    INCOME_STATEMENT: str = "INCOME_STATEMENT"
+    BALANCE_SHEET: str = "BALANCE_SHEET"
+    CASH_FLOW: str = "CASH_FLOW"
+    EARNINGS: str = "EARNINGS"
+    LISTING_STATUS: str = "LISTING_STATUS"
 
 
 def clean_column_names(column_name: str) -> str:
