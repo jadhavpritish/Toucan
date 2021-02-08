@@ -1,7 +1,8 @@
 import re
 from enum import Enum
-from typing import Optional
+from typing import NamedTuple, Optional
 
+import pandas as pd
 from typing_extensions import TypedDict
 
 
@@ -36,6 +37,7 @@ class AVFunctions(Enum):
     DAILY_ADJUSTED: str = "TIME_SERIES_DAILY_ADJUSTED"
     WEEKLY: str = "TIME_SERIES_WEEKLY"
     SYMBOl_SEARCH: str = "SYMBOL_SEARCH"
+    OVERVIEW: str = "OVERVIEW"
     INCOME_STATEMENT: str = "INCOME_STATEMENT"
     BALANCE_SHEET: str = "BALANCE_SHEET"
     CASH_FLOW: str = "CASH_FLOW"
@@ -49,3 +51,9 @@ def clean_column_names(column_name: str) -> str:
     """
     pattern = r"^\d+\.+\s+"
     return re.sub(pattern, "", column_name)
+
+
+class ReportsResponse(NamedTuple):
+
+    annual_reports: pd.DataFrame
+    quarterly_reports: pd.DataFrame
