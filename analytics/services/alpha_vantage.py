@@ -85,7 +85,7 @@ class AVTimeseries(AVAbstract):
         response.raise_for_status()
 
         response_json = response.json()
-        if not super.is_response_valid(response_json):
+        if not super().is_response_valid(response_json):
             raise HTTPError(f"Invalid Request with params - {query_params}")
 
         result = response_json[f"Time Series (Daily)"]
@@ -110,7 +110,7 @@ class AVTimeseries(AVAbstract):
         response.raise_for_status()
 
         response_json = response.json()
-        if not super.is_response_valid(response_json):
+        if not super().is_response_valid(response_json):
             raise HTTPError(f"Invalid Request with params - {query_params}")
 
         result = response_json.get("bestMatches")
