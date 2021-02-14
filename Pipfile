@@ -27,6 +27,7 @@ flask = "*"
 Django = "==2.1.*"
 djangorestframework = "==3.9.*"
 mpl-finance = "*"
+seaborn = "*"
 
 [requires]
 python_version = "3.7"
