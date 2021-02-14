@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 import pytest
 
-from analytics.strategies.sma_crossovers import SMAStrategy
+from analytics.strategies.ma_crossovers import MAStrategy
 
 
 class TestSMAStrategy(TestCase):
@@ -15,7 +15,7 @@ class TestSMAStrategy(TestCase):
         self.slow_ma = 20
         self.fast_ma = 10
 
-        self.sma_obj = SMAStrategy(
+        self.sma_obj = MAStrategy(
             scrip_df=self.sample_data, slow_ma=self.slow_ma, fast_ma=self.fast_ma
         )
 
@@ -23,7 +23,7 @@ class TestSMAStrategy(TestCase):
 
         # evaluate sma cross over stratgy
 
-        sma_df = self.sma_obj.sma_sessions()
+        sma_df = self.sma_obj.ma_sessions()
 
         column_suffix = f"{self.slow_ma}_{self.fast_ma}"
         expected_columns = [
@@ -41,6 +41,6 @@ class TestSMAStrategy(TestCase):
 
         with self.assertRaises(AssertionError):
             # slow_ma must always be greater than fast_ma
-            SMAStrategy(
+            MAStrategy(
                 scrip_df=self.sample_data, slow_ma=self.fast_ma, fast_ma=self.slow_ma
             )

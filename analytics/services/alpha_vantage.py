@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Any, Dict
 
 import pandas as pd  # type: ignore
@@ -60,6 +61,7 @@ class AVTimeseries(AVAbstract):
         result = response_json[f"Time Series ({interval.value})"]
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
+        result_df.index = pd.to_datetime(result_df.index)
         result_df.columns = list(map(clean_column_names, result_df.columns))
 
         result_df = result_df.astype(float)
@@ -67,12 +69,21 @@ class AVTimeseries(AVAbstract):
         return result_df.sort_index()
 
     def get_daily_data(
-        self, symbol: str, outputsize: OutputSize = OutputSize.COMPACT
+        self,
+        symbol: str,
+        outputsize: OutputSize = OutputSize.COMPACT,
+        adjusted: bool = True,
+        last_ten_years_only: bool = True,
     ) -> pd.DataFrame:
+
+        if adjusted:
+            av_function: str = AVFunctions.DAILY_ADJUSTED.value
+        else:
+            av_function = AVFunctions.DAILY.value
 
         query_params = QueryParams(
             apikey=self.api_key,
-            function=AVFunctions.DAILY.value,
+            function=av_function,
             symbol=symbol,
             outputsize=outputsize.value,
         )
@@ -91,9 +102,15 @@ class AVTimeseries(AVAbstract):
         result = response_json[f"Time Series (Daily)"]
 
         result_df = pd.DataFrame.from_dict(result, orient="index")
+        result_df.index = pd.to_datetime(result_df.index)
         result_df.columns = list(map(clean_column_names, result_df.columns))
 
         result_df = result_df.astype(float)
+
+        if last_ten_years_only:
+            result_df = result_df.loc[
+                result_df.index > datetime.now() - timedelta(weeks=520)
+            ]
 
         return result_df.sort_index()
 
