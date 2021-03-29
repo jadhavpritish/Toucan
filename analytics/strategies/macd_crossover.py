@@ -9,6 +9,7 @@ from analytics.strategies.utils import Trend
 from analytics.studies.macd import MACD
 
 
+@dataclass
 class MACDCrossOverStrategy(MACD):
     def macd_crossover_sessions(self):
 
@@ -65,6 +66,9 @@ class MACDCrossOverStrategy(MACD):
     def evaluate_macd_crossover(
         cls,
         ticker_df: pd.DataFrame,
+        slow_ma: int,
+        fast_ma: int,
+        signal_line_period: int,
         capture_trend: Trend = Trend.ALL,
     ):
         """
@@ -73,7 +77,12 @@ class MACDCrossOverStrategy(MACD):
         2. Aggregates data by session and trend to compute estimated resturns per session.
         """
 
-        macd_obj = cls(ticker_df=ticker_df)
+        macd_obj = cls(
+            ticker_df=ticker_df,
+            slow_ma=slow_ma,
+            fast_ma=fast_ma,
+            signal_line_period=signal_line_period,
+        )
 
         # Annotate sessions. A session start when faster MA cross above or below the slower MA.
         ticker_macd_sessions = macd_obj.macd_crossover_sessions()
