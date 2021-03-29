@@ -1,6 +1,9 @@
+import io
+import time
 from datetime import datetime, timedelta
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
+import numpy as np
 import pandas as pd  # type: ignore
 import requests
 from requests.exceptions import HTTPError
@@ -68,6 +71,66 @@ class AVTimeseries(AVAbstract):
 
         return result_df.sort_index()
 
+    def get_intraday_data_extended(
+        self,
+        symbol: str,
+        interval: TimeInterval,
+        n_months: int = 12,
+    ) -> pd.DataFrame:
+
+        # Artificial restriction
+        # TODO: resconsider this later
+        assert (
+            n_months < 100
+        ), "a maximum of 100 months worth of data can be fetched, Mostly for safety"
+
+        year, month = 1, 1
+
+        base_params = {
+            "apikey": self.api_key,
+            "symbol": symbol,
+            "interval": interval.value,
+            "function": AVFunctions.INTRADAY_EXTENDED.value,
+        }
+
+        final_df = pd.DataFrame()
+
+        throttle_count = 1
+        for month in range(1, n_months + 1):
+            if throttle_count == 5:
+                # "Note": "Thank you for using Alpha Vantage! Our standard API call frequency
+                # is 5 calls per minute and 500 calls per day.
+                # Please visit https://www.alphavantage.co/premium/
+                # if you would like to target a higher API call frequency."\n}'
+                time.sleep(60)
+
+            if month > 12:
+                month = 1
+                year += 1
+
+            query_params = QueryParams(
+                **base_params,
+                slice=f"year{year}month{month}",
+            )
+
+            response = requests.get(
+                API_BASE_URL,
+                params=query_params,  # type: ignore
+                timeout=API_TIMEOUT,
+            )
+
+            response.raise_for_status()
+            result_df = pd.read_csv(io.StringIO(response.content.decode("utf-8")))
+            assert "time" in result_df.columns, f"{year}_{month}"
+            result_df = result_df.set_index("time")
+            result_df.index.name = None
+
+            final_df = final_df.append(result_df)
+
+            throttle_count += 1
+
+        return final_df.sort_index()
+
     def get_daily_data(
         self,
         symbol: str,
@@ -77,13 +140,13 @@ class AVTimeseries(AVAbstract):
     ) -> pd.DataFrame:
 
         if adjusted:
-            av_function: str = AVFunctions.DAILY_ADJUSTED.value
+            av_function: str = AVFunctions.DAILY_ADJUSTED
         else:
-            av_function = AVFunctions.DAILY.value
+            av_function = AVFunctions.DAILY
 
         query_params = QueryParams(
             apikey=self.api_key,
-            function=av_function,
+            function=av_function.value,
             symbol=symbol,
             outputsize=outputsize.value,
         )

@@ -35,6 +35,6 @@ class MovingAverages(TickerData):
         ema_dict = {}
         for n in look_back_periods:
             ema_values = self.ticker_df[column].ewm(span=n).mean()
-            ema_dict[f"ma_{n}"] = ema_values
+            ema_dict[f"ema_{n}"] = ema_values
 
         return pd.DataFrame(ema_dict, index=self.ticker_df.index)
